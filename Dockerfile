@@ -30,8 +30,10 @@ RUN apt-get update && apt-get install -y \
     iperf3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install scapy
-
 WORKDIR /usr/src/app
+
+COPY ./requirements.txt .
+
+RUN pip install -r ./requirements.txt
 
 CMD ["bash"]
