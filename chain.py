@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 """
 This application transmits a collection of raw video material through configurable networks and stores the
 obtained results.
