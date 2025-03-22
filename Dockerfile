@@ -18,7 +18,9 @@ FROM python:2.7.18-slim AS base
 
 COPY --from=tpkloss-build /usr/src/tpkloss/tpkloss /usr/local/bin/tpkloss
 
-# Install requirements: ffmpeg, tcpdump, tcpreplay, tc
+# Install requirements:
+# For streamsim: ffmpeg, tcpdump, tcpreplay, tc
+# For helper scripts: bc, parallel
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     tcpdump \
@@ -28,6 +30,8 @@ RUN apt-get update && apt-get install -y \
     net-tools \
     iperf \
     iperf3 \
+    bc \
+    parallel \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
