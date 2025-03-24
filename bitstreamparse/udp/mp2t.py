@@ -2,7 +2,8 @@ __author__ = 'Alexander Dethof'
 
 from bitstreamparse.bitStreamParser import BitStreamParser
 from scapy.all import Packet
-from scapy.layers.inet import UDP, Raw
+from scapy.layers.inet import UDP
+from scapy.all import Raw
 
 
 class Mp2t(BitStreamParser):
