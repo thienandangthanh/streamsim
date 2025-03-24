@@ -4,7 +4,8 @@ from abc import ABCMeta, abstractmethod
 from bitstreamparse.bitStreamParser import BitStreamParser
 from scapy.all import Packet
 from scapy.layers.inet import UDP
-from scapy.layers.rtp import RTP, Raw
+from scapy.layers.rtp import RTP
+from scapy.all import Raw
 
 
 class RtpParser(BitStreamParser):
