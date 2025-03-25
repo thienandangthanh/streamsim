@@ -46,7 +46,10 @@ docker build -t streamsim .
 To use the Docker image, run:
 
 ```bash
-docker run -v /path/to/your/working/directory:/usr/src/app streamsim
+docker run -it --rm \
+  -v /path/to/your/working/directory:/usr/src/app \
+  --cap-add=SYS_NICE \
+  streamsim
 ```
 
 Before you run the chain the first time it is recommended to setup a further
