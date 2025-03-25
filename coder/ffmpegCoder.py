@@ -277,6 +277,8 @@ class FfmpegCoder(AbstractCoder):
         # build encoder command
         command = Command(APP_PATH)
 
+        command.set_as_argument('-hide_banner', '-hide_banner')
+
         if EncodingTable.DB_TABLE_FIELD_NAME_ALTERNATIVE_COMMAND_LINE in encoding_set:
             self.__extend_command_with_alternative_command_line(
                 command,
@@ -396,6 +398,8 @@ class FfmpegCoder(AbstractCoder):
 
         command = Command(APP_PATH)
 
+        command.set_as_argument('-hide_banner', '-hide_banner')
+
         """
         -y: override without asking
         """
@@ -459,6 +463,13 @@ class FfmpegCoder(AbstractCoder):
 
         # build streaming command
         command = Command(APP_PATH)
+
+        command.set_as_argument('-hide_banner', '-hide_banner')
+
+        """
+        -y: override without asking
+        """
+        command.set_as_posix_option('y')
 
         """
         -re: play back in real-time
