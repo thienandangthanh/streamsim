@@ -47,8 +47,9 @@ To use the Docker image, run:
 
 ```bash
 docker run -it --rm \
-  -v /path/to/your/working/directory:/usr/src/app \
+  -v /path/to/your/data/directory:/app/data \
   --cap-add=SYS_NICE \
+  --gpus=all \
   streamsim
 ```
 
