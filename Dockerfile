@@ -14,68 +14,6 @@ WORKDIR /usr/src/tpkloss
 
 RUN make release
 
-FROM nvidia/cuda:12.8.1-devel-ubuntu24.04 AS ffmpeg-builder
-
-# Install FFmpeg build dependencies
-RUN apt-get update && apt-get install -y \
-    autoconf \
-    automake \
-    build-essential \
-    cmake \
-    git \
-    libass-dev \
-    libfreetype6-dev \
-    libsdl2-dev \
-    libtool \
-    libva-dev \
-    libvdpau-dev \
-    libvorbis-dev \
-    libxcb1-dev \
-    libxcb-shm0-dev \
-    libxcb-xfixes0-dev \
-    pkg-config \
-    texinfo \
-    wget \
-    yasm \
-    zlib1g-dev \
-    nasm \
-    libnuma-dev \
-    libx264-dev \
-    libx265-dev \
-    # cuda-npp-12-8 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install nv-codec-headers (ffnvcodec)
-WORKDIR /ffmpeg_sources
-RUN git clone https://github.com/FFmpeg/nv-codec-headers.git \
-    && cd nv-codec-headers \
-    && make \
-    && make install
-
-# Build FFmpeg with NVIDIA hardware acceleration support
-WORKDIR /ffmpeg_sources
-RUN git clone https://git.ffmpeg.org/ffmpeg.git \
-    && cd ffmpeg \
-    && git checkout n7.1 \
-    && ./configure \
-      --prefix="/ffmpeg_build" \
-      --pkg-config-flags="--static" \
-      --extra-cflags="-I/ffmpeg_build/include" \
-      --extra-ldflags="-L/ffmpeg_build/lib" \
-      --extra-libs="-lpthread -lm" \
-      --enable-gpl \
-      --enable-libass \
-      --enable-libfreetype \
-      --enable-libx264 \
-      --enable-libx265 \
-      --enable-nonfree \
-      --enable-cuda \
-      --enable-cuvid \
-      --enable-nvenc \
-      --enable-cuda-nvcc \
-    && make -j$(nproc) \
-    && make install
-
 FROM ubuntu:24.04 AS python-builder
 
 # Install Python build dependencies
@@ -109,10 +47,10 @@ RUN cd /tmp \
     && /python_build/bin/python2.7 get-pip.py \
     && /python_build/bin/pip2.7 install virtualenv
 
-FROM nvidia/cuda:12.8.1-base-ubuntu24.04 AS final
+FROM jrottenberg/ffmpeg:7.1.1-nvidia2404 AS final
 
 # Install runtime dependencies
-# For streamsim: ffmpeg, tcpdump, tcpreplay, tc
+# For streamsim: tcpdump, tcpreplay, tc
 # For helper scripts: bc, parallel
 RUN apt-get update && apt-get install -y \
     tcpdump \
@@ -124,32 +62,10 @@ RUN apt-get update && apt-get install -y \
     iperf3 \
     bc \
     parallel \
-    libass9 \
-    libfreetype6 \
-    libsdl2-2.0-0 \
-    libsndio-dev \
-    libva2 \
-    libva-drm2 \
-    libva-x11-2 \
-    libvdpau1 \
-    libvorbis0a \
-    libx264-164 \
-    libx265-199 \
-    libnuma1 \
-    libxv-dev \
-    libxcb1 \
-    libxcb-shape0 \
-    libxcb-shm0 \
-    libxcb-xfixes0 \
-    libssl3 \
-    libbz2-1.0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy tpkloss from the builder stage
 COPY --from=tpkloss-builder /usr/src/tpkloss/tpkloss /usr/local/bin/tpkloss
-
-# Copy FFmpeg from the builder stage
-COPY --from=ffmpeg-builder /ffmpeg_build /usr/local
 
 # Copy Python from the builder stage
 COPY --from=python-builder /python_build /usr/local
