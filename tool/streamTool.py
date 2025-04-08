@@ -54,6 +54,16 @@ class StreamTool(AbstractTool):
         ffmpeg_command = Command(FFMPEG_PATH)
 
         """
+        hide ffmpeg banner
+        """
+        ffmpeg_command.set_as_argument('-hide_banner', '-hide_banner')
+
+        """
+        -y: override without asking
+        """
+        ffmpeg_command.set_as_posix_option('y')
+
+        """
         i: input file
         """
         ffmpeg_command.set_as_posix_option('i', input_path)
