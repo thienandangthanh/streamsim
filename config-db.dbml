@@ -1,0 +1,285 @@
+Table src {
+	src_id int [ pk, increment, not null, unique ]
+	src_name varchar
+	res varchar
+	fps int
+}
+
+Table pvs {
+	pvs_id int [ pk, increment, not null, unique ]
+	src_id int
+	hrc_id int
+}
+
+Table hrc {
+	hrc_id int [ pk, increment, not null, unique ]
+	encoding_id int
+	packet_loss_id int
+	coder_id varchar
+	stream_mode varchar
+}
+
+Table encoding {
+	encoding_id int [ pk, increment, not null, unique ]
+	codec_id int
+	codec_settings_id int
+	bit_rate int
+	two_pass bool
+	alt_cmd_line varchar
+}
+
+Table x264 {
+	codec_settings_id int [ pk, increment, not null, unique ]
+	preset varchar
+	crf int
+	keyint int
+	min_keyint int
+}
+
+Table x265 {
+	codec_settings_id int [ pk, increment, not null, unique ]
+	preset varchar
+	crf int
+	keyint int
+	min_keyint int
+	merange int
+	me varchar
+	slices int
+	bpyramid varchar
+	bframes int
+}
+
+Table packet_loss {
+	packet_loss_id int [ pk, increment, not null, unique ]
+	manipulator_tool varchar [note: '''
+		none
+		tc
+		telchemy
+	''']
+	manipulator_tool_id int
+}
+
+Table tc {
+	id int [ pk, increment, not null, unique ]
+	delay float
+	jitter float
+	distribution varchar [note:'''
+		none
+		uniform
+		normal
+		pareto
+		paretonormal
+	''']
+	loss_mode varchar [note:'''
+		gemodel : loss is distributed via Gilbert-Elliot models
+		state   : loss is distributed via markov model settings
+		random  : loss is randomly distributed
+	''']
+	loss_mode_id int [note:'''
+		an arbitrary, but unique, id referencing to a configuration set of the appropriate
+		loss_mode, the referenced configuration can be set in the tc configuration folders
+		(look up the file according to the mode's name!)
+	''']
+
+	Note: '''
+	Configure the traffic control manipulator tool for online manipulation.
+	'''
+}
+
+Table gemodel {
+	id int [ pk, increment, not null, unique ]
+	p float [ note: '''transition probability in % for bad states''']
+	r float [ note: '''the transition probability for good states [default: r = 100% - p]''']
+	1_h float [ note: '''1-h - loss probability in the good state [default: 0%]''']
+	1_k float [ note: '''1-k - loss probability in the bad state [default: 100%]''']
+
+	Note: '''
+	In this file you are able to configure arbitrary data sets of gilbert-elliot or bernoulli models,
+	which can be used by the tc tool to manipulate the network traffic according to these models.
+
+	If only p is set             => Bernoulli Model
+
+	If only p and r are set      => Simple Gilbert Model
+
+	If only p, r and 1-h are set => Gilbert Model
+
+	If all params set            => Gilbert-Elliot Model
+	'''
+}
+
+Table random {
+	id int [ pk, increment, not null, unique ]
+	loss_rate float [ note: '''loss rate in percent (%) which may apply in this model''']
+
+	Note: '''
+	individual data sets which can be used as random loss models for the tc packet manipulation tool
+	'''
+}
+
+Table state {
+	id int [ pk, increment, not null, unique ]
+	p13 float [ note:'''probability in percent (%) for the good reception''']
+	p31 float [ note:'''[optional] probability in percent (%)''']
+	p32 float [ note:'''[optional] probability in percent (%)''']
+	p23 float [ note:'''[optional] probability in percent (%)''']
+	p14 float [ note:'''[optional] probability in percent (%)''']
+
+	Note: '''
+	configure individual markov models which can be used by
+	the tc online network manipulator
+	to insert packet loss into an ongoing transmission
+
+	if p13 is set only => Bernoulli Model
+	With p31 the configuration above is extended to a 2-State Markov Model (Good reception within a burst)
+	With p32 and p23 the configuration above is extended to a 3-State Markov Model (Burst losses)
+	With p14 the configuration above is extended to a 4-State Markov Model (Independent losses)
+	'''
+}
+
+Table telchemy {
+	id int [ pk, increment, not null, unique ]
+	man_type varchar [ note:'''
+		defines the manipulation model to use for the manipulation
+		>> r : read a trace (further specifications in read_trace table)
+		>> m : use a markov model (further specifications in markov table)
+		    ''']
+	man_id int [ note: '''id to identify the settings linked to the appropriate manipulation''']
+
+	Note: '''
+	configure different individual setting combination
+	which can be used to manipulate .pcap files with the telchemy tpkloss tool
+	'''
+}
+
+Table markov {
+	id int [ pk, increment, not null, unique ]
+	markov_type varchar [ note:'''
+		markov model to use for the manipulation
+		>> 4s : 4-state markov model (config in:
+		        telchemy/markov4state table)
+		>> p4 : P.NAMS/P.NBAMS 4-state markov model (config in:
+		        telchemy/pnamspnbams4 table)
+		>> 2s : 2-state markov model (config in:
+		        telchemy/markov2state table)
+		''']
+	markov_id int [note: '''id to identify the settings linked to the appropriate models''']
+	start_after int [note: '''time in ms after the transmission's beginning, when the manipulation should start''']
+	end_before int [note: '''time in ms before the transmission's end, when the manipulation should stop''']
+
+	Note: '''
+	Configure different individual setting combination which can be used to manipulate
+	.pcap files with the telchemy tpkloss tool, but only for markov models.
+	'''
+}
+
+Table read_trace {
+	id int [ pk, increment, not null, unique ]
+	trace_file_name varchar [note: '''
+		a relative file path to a loss trace, which is looked up in the folder PATH/traces
+		(with PATH as the path defined at the chain's execution time with the "p"/"path" argument)
+		''']
+}
+
+Table markov2state {
+    id int [pk, increment, not null, unique]
+    pcb float [note: '''Transition probability from burst to gap state''']
+    pbc float [note: '''Transition probability from gap to burst state''']
+    g float [note: '''Loss probability in gap state''']
+    b float [note: '''Loss probability in burst state''']
+
+    Note: '''
+    Configure different data sets for individual 2-state Markov models
+    used for packet manipulation by Telchemy.
+    '''
+}
+
+Table markov4state {
+    id int [pk, increment, not null, unique]
+    pba float [note: '''Transition probability from gap lossless to gap lossy state''']
+    pbc float [note: '''Transition probability from gap to gap burst state''']
+    pdc float [default: 0.25, note: '''Transition probability from burst lossless to burst lossy state''']
+    pcd float [default: 0.50, note: '''Transition probability from burst lossy to burst lossless state''']
+    pcb float [default: 0.30, note: '''Transition probability from burst to gap state''']
+    g float [note: '''Loss probability in gap state''']
+    b float [note: '''Loss probability in burst state''']
+
+    Note: '''
+    Configure different 4-state Markov models used by the Telchemy tool
+    to manipulate pcap files with loss behavior.
+    '''
+}
+
+Table pnamspnbams4 {
+    id int [pk, increment, not null, unique]
+    loss_ratio float [note: '''Target average loss probability in %''']
+    gap_ratio float [note: '''Percentage of time the process resides in the gap state (in %)''']
+
+    Note: '''
+    Specify different P.NAMS/P.NBAMS 4-state Markov models for the Telchemy tool
+    to manipulate packets.
+    '''
+}
+
+Ref fk_src_src_id_pvs {
+	src.src_id - pvs.src_id [ delete: no action, update: no action ]
+}
+
+Ref fk_hrc_hrc_id_pvs {
+	hrc.hrc_id - pvs.hrc_id [ delete: no action, update: no action ]
+}
+
+Ref fk_encoding_encoding_id_hrc {
+	encoding.encoding_id - hrc.encoding_id [ delete: no action, update: no action ]
+}
+
+Ref fk_packet_loss_packet_loss_id_hrc {
+	packet_loss.packet_loss_id - hrc.packet_loss_id [ delete: no action, update: no action ]
+}
+
+Ref encoding_x264 {
+  encoding.codec_settings_id - x264.codec_settings_id [ delete: no action, update: no action ]
+}
+
+Ref encoding_x265 {
+  encoding.codec_settings_id - x265.codec_settings_id [ delete: no action, update: no action ]
+}
+
+Ref packet_loss_tc {
+  packet_loss.manipulator_tool_id - tc.id [ delete: no action, update: no action ]
+}
+
+Ref packet_loss_telchemy {
+  packet_loss.manipulator_tool_id - telchemy.id [ delete: no action, update: no action ]
+}
+
+Ref tc_gemodel {
+  tc.loss_mode_id - gemodel.id [ delete: no action, update: no action ]
+}
+
+Ref tc_random {
+  tc.loss_mode_id - random.id [ delete: no action, update: no action ]
+}
+
+Ref tc_state {
+  tc.loss_mode_id - state.id [ delete: no action, update: no action ]
+}
+
+Ref telchemy_markov {
+  telchemy.man_id - markov.id [ delete: no action, update: no action ]
+}
+
+Ref telchemy_read_trace {
+  telchemy.man_id - read_trace.id [ delete: no action, update: no action ]
+}
+
+Ref markov_markov2state {
+    markov.markov_id - markov2state.id [delete: no action, update: no action]
+}
+
+Ref markov_markov4state {
+    markov.markov_id - markov4state.id [delete: no action, update: no action]
+}
+
+Ref markov_pnamspnbams4 {
+    markov.markov_id - pnamspnbams4.id [delete: no action, update: no action]
+}
